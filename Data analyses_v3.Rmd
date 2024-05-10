@@ -1,0 +1,2076 @@
+---
+title: "Data analyses"
+author: "Anders Skyrud Danielsen"
+date: "14 09 2023"
+output: html_document
+---
+
+# Knowledge and attitudes towards infection control among Norwegian cancer patients
+
+## Data analyses
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = F) 
+
+pacman::p_load(
+  tidyverse,
+  tidylog,
+  lubridate,
+  rio,
+  gtsummary, 
+  psych,
+  mice,
+  ggplot2, 
+  viridis,
+  patchwork,
+  gridExtra,
+  broom,
+  writexl
+)
+
+setwd("M:/p2300-anderssd")
+
+study3_data <- import("study3_data.csv")
+
+theme_set(theme_classic())
+
+```
+
+### Table 1
+
+Respondent characteristics.
+
+```{r table 1}
+
+# Table 1
+table_1 <- study3_data %>% 
+  select(alder, alder_kat, kjoenn, storby, foedeland, krefterfaring, krefttype, diagnoseaar, behandling, helseregion,
+         behandling_type_1, behandling_type_2, behandling_type_3, behandling_type_4, behandling_type_6) %>% 
+  mutate(alder_kat = factor(alder_kat, levels = c("Under 40 years", "40-49 years", "50-59 years", "60-69 years", "70 years or older"))) %>% 
+  mutate(kjoenn = case_when(
+    kjoenn == 1 ~ "Male",
+    kjoenn == 0 ~ "Female",
+    kjoenn == 2 ~ "Other",
+    kjoenn == 9 ~ "Do not wish to disclose"
+  ),
+  kjoenn = factor(kjoenn, levels = c("Male", "Female", "Other", "Do not wish to disclose"))) %>% 
+  mutate(storby = case_when(
+    storby == 1 ~ "Yes",
+    storby == 0 ~ "No",
+    storby == 9 ~ "Unknown"
+  ),
+  storby = factor(storby, levels = c("Yes", "No", "Unknown"))) %>% 
+  mutate(foedeland = case_when(
+    foedeland == 1 ~ "Norway",
+    foedeland == 0 ~ "Abroad",
+    foedeland == 9 ~ "Unknown"
+  ),
+  foedeland = factor(foedeland, levels = c("Norway", "Abroad", "Unknown"))) %>% 
+   mutate(krefterfaring = case_when(
+    krefterfaring == 1 ~ "Patient",
+    krefterfaring == 0 ~ "Next-of-kin/bereaved",
+    krefterfaring == 9 ~ "Unknown"
+  ),
+  krefterfaring = factor(krefterfaring, levels = c("Patient", "Next-of-kin/bereaved", "Unknown"))) %>% 
+  mutate(behandling = case_when(
+    behandling == 1 ~ "Yes",
+    behandling == 0 ~ "No",
+    behandling == 3 ~ "Not relevant",
+    behandling == 9 ~ "Unknown"
+  ),
+  behandling = factor(behandling, levels = c("Yes", "No", "Not relevant", "Unknown"))) %>% 
+  mutate(krefttype = case_when(
+    krefttype == 1 ~ "Multiple",
+    krefttype == 2 ~ "Oral",
+    krefttype == 3 ~ "Gastrointestinal",
+    krefttype == 4 ~ "Respiratory",
+    krefttype == 5 ~ "Skin",
+    krefttype == 6 ~ "Breast",
+    krefttype == 7 ~ "Female genitals",
+    krefttype == 8 ~ "Male genitals",
+    krefttype == 9 ~ "Urinary tract",
+    krefttype == 10 ~ "Eye, brain or central nervous system",
+    krefttype == 11 ~ "Thyroid or endocrine",
+    krefttype == 12 ~ "Haematopoietic or lymphoid",
+    krefttype == 13 ~ "Other or unknown primary",
+    krefttype == 99 ~ "Unknown"
+  ),
+  krefttype = factor(krefttype, levels = c("Multiple", "Oral", "Gastrointestinal", "Respiratory", "Skin", "Breast", "Female genitals", "Male genitals", "Urinary tract", "Eye, brain or central nervous system", "Thyroid or endocrine", "Haematopoietic or lymphoid", "Other or unknown primary", "Unknown"))) %>% 
+  mutate(helseregion = case_when(
+    helseregion == 1 ~ "Northern Norway",
+    helseregion == 2 ~ "Central Norway",
+    helseregion == 3 ~ "Western Norway",
+    helseregion == 4 ~ "South-Eastern Norway",
+    helseregion == 9 ~ "Unknown"
+  ),
+  helseregion = factor(helseregion, levels = c("Northern Norway", "Central Norway", "Western Norway", "South-Eastern Norway", "Unknown"))) %>% 
+  mutate(diagnoseaar = case_when(
+    diagnoseaar == 1 ~ "2020 or later",
+    diagnoseaar == 2 ~ "2010-2019",
+    diagnoseaar == 3 ~ "2000-2009",
+    diagnoseaar == 4 ~ "Before 2000",
+    diagnoseaar == 9 ~ "Unknown"
+  ),
+  diagnoseaar = factor(diagnoseaar, levels = c("2020 or later", "2010-2019", "2000-2009", "Before 2000", "Unknown"))) %>% 
+  mutate(behandling_type_1 = case_when(
+    behandling_type_1 == 1 ~ "Yes",
+    behandling_type_1 == 0 ~ "No/unknown",
+  ),
+  behandling_type_1 = factor(behandling_type_1, levels = c("Yes", "No/unknown"))) %>% 
+  mutate(behandling_type_2 = case_when(
+    behandling_type_2 == 1 ~ "Yes",
+    behandling_type_2 == 0 ~ "No/unknown",
+  ),
+  behandling_type_2 = factor(behandling_type_2, levels = c("Yes", "No/unknown"))) %>% 
+  mutate(behandling_type_3 = case_when(
+    behandling_type_3 == 1 ~ "Yes",
+    behandling_type_3 == 0 ~ "No/unknown",
+  ),
+  behandling_type_3 = factor(behandling_type_3, levels = c("Yes", "No/unknown"))) %>% 
+  mutate(behandling_type_4 = case_when(
+    behandling_type_4 == 1 ~ "Yes",
+    behandling_type_4 == 0 ~ "No/unknown",
+  ),
+  behandling_type_4 = factor(behandling_type_4, levels = c("Yes", "No/unknown"))) %>% 
+  mutate(behandling_type_6 = case_when(
+    behandling_type_6 == 1 ~ "Yes",
+    behandling_type_6 == 0 ~ "No/unknown",
+  ),
+  behandling_type_6 = factor(behandling_type_6, levels = c("Yes", "No/unknown"))) %>% 
+  tbl_summary(
+  by = krefterfaring,
+  label = list(
+    alder ~ "Age (continuous)",
+    alder_kat ~ "Age (categorical)",
+    kjoenn ~ "Gender",
+    storby ~ "Urban residence",
+    foedeland ~ "Country of birth",
+    behandling ~ "Currently undergoing treatment",
+    krefttype ~ "Cancer type",
+    helseregion ~ "Health region",
+    diagnoseaar ~ "Year of cancer diagnosis",
+    behandling_type_1 ~ "Surgery",
+    behandling_type_2 ~ "Radiation therapy",
+    behandling_type_3 ~ "Chemotherapy",
+    behandling_type_4 ~ "Stem cell transplantation",
+    behandling_type_6 ~ "No treatment"
+  )
+) %>% 
+  add_overall() 
+
+# Convert to data frame
+table_1_df <- as_tibble(table_1)
+
+# Write to Excel
+writexl::write_xlsx(table_1_df, "table_1.xlsx")
+
+```
+
+### Table 2
+
+Knowledge about infection control.
+
+```{r table 2}
+
+# Stratified and merged gtsummary table
+
+# Initial formatting
+
+study3_data <- study3_data %>% 
+  mutate(bakterier = case_when(
+    bakterier == 1 ~ "Correct",
+    TRUE ~ "Wrong/unknown"
+  )) %>% 
+  mutate(antibiotikaresistens = case_when(
+    antibiotikaresistens == 1 ~ "Correct",
+    TRUE ~ "Wrong/unknown"
+  )) %>% 
+  mutate(haandvask = case_when(
+    haandvask == 1 ~ "Correct",
+    TRUE ~ "Wrong/unknown"
+  )) %>% 
+  mutate(vaksiner = case_when(
+    vaksiner == 1 ~ "Correct",
+    TRUE ~ "Wrong/unknown"
+  )) %>% 
+  mutate(resistens_fremtiden = case_when(
+    resistens_fremtiden == 1 ~ "Correct",
+    TRUE ~ "Wrong/unknown"
+  )) %>% 
+  mutate(smittevern = case_when(
+    smittevern == 1 ~ "Correct",
+    TRUE ~ "Wrong/unknown"
+  )) %>% 
+  mutate(haandvask_resistens = case_when(
+    haandvask_resistens == 1 ~ "Correct",
+    TRUE ~ "Wrong/unknown"
+  )) %>% 
+  mutate(munnbind = case_when(
+    munnbind == 1 ~ "Correct",
+    TRUE ~ "Wrong/unknown"
+  )) %>% 
+  mutate(helsepersonell_ansvar = case_when(
+    helsepersonell_ansvar == 1 ~ "Correct",
+    TRUE ~ "Wrong/unknown"
+  )) %>% 
+  mutate(kroppsvaesker = case_when(
+    kroppsvaesker == 1 ~ "Correct",
+    TRUE ~ "Wrong/unknown"
+  )) %>% 
+  mutate(munnbind_pasient = case_when(
+    munnbind_pasient == 1 ~ "Correct",
+    TRUE ~ "Wrong/unknown"
+  )) %>% 
+  mutate(rene_overflater = case_when(
+    rene_overflater == 1 ~ "Correct",
+    TRUE ~ "Wrong/unknown"
+  )) %>% 
+  mutate(virus = case_when(
+    virus == 1 ~ "Correct",
+    TRUE ~ "Wrong/unknown"
+  )) 
+
+# Overall table
+table_3a <- study3_data %>% 
+  select(bakterier:mean_correct) %>% 
+  tbl_summary(
+    label = list(
+      bakterier ~ "K1: Commensal bacteria",
+      antibiotikaresistens ~ "K2: Antibiotic resistance",
+      haandvask ~ "K3: Hand hygiene",
+      vaksiner ~ "K4: Vaccines",
+      resistens_fremtiden ~ "K5: Future antibiotic use",
+      smittevern ~ "K6: Infection control",
+      haandvask_resistens ~ "K7: Prevention of antibiotic resistance",
+      munnbind ~ "K8: Staff face masks",
+      helsepersonell_ansvar ~ "K9: Staff responsibilities",
+      kroppsvaesker ~ "K10: Body fluids",
+      munnbind_pasient ~ "K11: Patient face masks",
+      rene_overflater ~ "K12: Clean surfaces",
+      virus ~ "K13: Aerial transmission routes"
+    ),
+    statistic = all_continuous() ~ "{mean} ({sd})" 
+  ) %>% 
+  add_ci() %>% 
+  modify_spanning_header("stat_0" ~ "**Overall**")
+
+# Young vs old
+table_3b <- study3_data %>% 
+  mutate(alder_split = case_when(
+    alder <55 ~ "Below 55 years",
+    alder >=55 ~ "55 years or older"
+  )) %>% 
+  select(alder_split, bakterier:mean_correct) %>%
+  tbl_summary(
+    by = alder_split,
+    label = list(
+      bakterier ~ "K1: Commensal bacteria",
+      antibiotikaresistens ~ "K2: Antibiotic resistance",
+      haandvask ~ "K3: Hand hygiene",
+      vaksiner ~ "K4: Vaccines",
+      resistens_fremtiden ~ "K5: Future antibiotic use",
+      smittevern ~ "K6: Infection control",
+      haandvask_resistens ~ "K7: Prevention of antibiotic resistance",
+      munnbind ~ "K8: Staff face masks",
+      helsepersonell_ansvar ~ "K9: Staff responsibilities",
+      kroppsvaesker ~ "K10: Body fluids",
+      munnbind_pasient ~ "K11: Patient face masks",
+      rene_overflater ~ "K12: Clean surfaces",
+      virus ~ "K13: Aerial transmission routes"
+    ),
+    statistic = all_continuous() ~ "{mean} ({sd})" 
+  ) %>% 
+  add_ci() %>%
+  modify_spanning_header(c("stat_1", "stat_2") ~ "**Age**")
+
+# Table on patients vs next-of-kin/bereaved
+table_3c <- study3_data %>% 
+  mutate(krefterfaring = case_when(
+    krefterfaring == 1 ~ "Patient",
+    krefterfaring == 0 ~ "Next-of-kin/bereaved",
+    TRUE ~ NA_character_
+  )) %>% 
+  select(krefterfaring, bakterier:mean_correct) %>%
+  tbl_summary(
+    by = krefterfaring,
+    label = list(
+      bakterier ~ "K1: Commensal bacteria",
+      antibiotikaresistens ~ "K2: Antibiotic resistance",
+      haandvask ~ "K3: Hand hygiene",
+      vaksiner ~ "K4: Vaccines",
+      resistens_fremtiden ~ "K5: Future antibiotic use",
+      smittevern ~ "K6: Infection control",
+      haandvask_resistens ~ "K7: Prevention of antibiotic resistance",
+      munnbind ~ "K8: Staff face masks",
+      helsepersonell_ansvar ~ "K9: Staff responsibilities",
+      kroppsvaesker ~ "K10: Body fluids",
+      munnbind_pasient ~ "K11: Patient face masks",
+      rene_overflater ~ "K12: Clean surfaces",
+      virus ~ "K13: Aerial transmission routes"
+    ),
+    statistic = all_continuous() ~ "{mean} ({sd})" 
+  ) %>% 
+  add_ci() %>%
+  modify_spanning_header(c("stat_1", "stat_2") ~ "**Cancer experience**")
+
+# Table on treatment status
+table_3d <- study3_data %>% 
+  mutate(behandling = case_when(
+    behandling == 1 ~ "In treatment",
+    behandling == 0 ~ "Not in treatment",
+    TRUE ~ NA_character_
+  )) %>% 
+  select(behandling, bakterier:mean_correct) %>%
+  tbl_summary(
+    by = behandling,
+    label = list(
+      bakterier ~ "K1: Commensal bacteria",
+      antibiotikaresistens ~ "K2: Antibiotic resistance",
+      haandvask ~ "K3: Hand hygiene",
+      vaksiner ~ "K4: Vaccines",
+      resistens_fremtiden ~ "K5: Future antibiotic use",
+      smittevern ~ "K6: Infection control",
+      haandvask_resistens ~ "K7: Prevention of antibiotic resistance",
+      munnbind ~ "K8: Staff face masks",
+      helsepersonell_ansvar ~ "K9: Staff responsibilities",
+      kroppsvaesker ~ "K10: Body fluids",
+      munnbind_pasient ~ "K11: Patient face masks",
+      rene_overflater ~ "K12: Clean surfaces",
+      virus ~ "K13: Aerial transmission routes"
+    ),
+    statistic = all_continuous() ~ "{mean} ({sd})" 
+  ) %>% 
+  add_ci() %>%
+  modify_spanning_header(c("stat_1", "stat_2") ~ "**Treatment status**")
+
+study3_data <- study3_data %>% 
+  mutate(krefttype_2 = case_when(
+    krefttype == 12 ~ "Haematologic cancer",
+    krefttype == 99 | krefttype == 13 ~ NA_character_,
+    TRUE ~ "Solid cancer"
+  )) 
+
+# Table on haematologic vs other cancers
+table_3e <- study3_data %>% 
+  select(krefttype_2, bakterier:mean_correct) %>%
+  tbl_summary(
+    by = krefttype_2,
+    label = list(
+      bakterier ~ "K1: Commensal bacteria",
+      antibiotikaresistens ~ "K2: Antibiotic resistance",
+      haandvask ~ "K3: Hand hygiene",
+      vaksiner ~ "K4: Vaccines",
+      resistens_fremtiden ~ "K5: Future antibiotic use",
+      smittevern ~ "K6: Infection control",
+      haandvask_resistens ~ "K7: Prevention of antibiotic resistance",
+      munnbind ~ "K8: Staff face masks",
+      helsepersonell_ansvar ~ "K9: Staff responsibilities",
+      kroppsvaesker ~ "K10: Body fluids",
+      munnbind_pasient ~ "K11: Patient face masks",
+      rene_overflater ~ "K12: Clean surfaces",
+      virus ~ "K13: Aerial transmission routes"
+    ),
+    statistic = all_continuous() ~ "{mean} ({sd})" 
+  ) %>% 
+  add_ci() %>%
+  modify_spanning_header(c("stat_1", "stat_2") ~ "**Cancer type**")
+
+table_2 <- tbl_merge(tbls = list(table_3a, table_3b, table_3c, table_3d, table_3e), tab_spanner = F)
+
+table_2
+
+# Convert to data frame
+table_2_df <- as_tibble(table_2)
+
+# Write to Excel
+writexl::write_xlsx(table_2_df, "table_2.xlsx")
+
+```
+
+### Figure 1 
+
+Description of attitude scores. 
+
+```{r figure 1, fig.height=20, fig.width=10}
+
+# Create figures
+
+# Plot 1
+
+domain1_data <- study3_data %>%
+  select(matches("^holdning_1[a-g]$")) %>%
+  mutate(across(everything(), ~na_if(., 9))) %>%
+  pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
+  group_by(item) %>%
+  summarise(
+    mean = mean(value, na.rm = TRUE),
+    sd = sd(value, na.rm = TRUE),
+    n = sum(!is.na(value))
+  ) %>%
+  mutate(
+    sem = sd / sqrt(n),
+    lower = mean - qt(0.975, n - 1) * sem,
+    upper = mean + qt(0.975, n - 1) * sem
+  ) %>% 
+  rename(mean_score = mean)
+
+# Add labels for the items
+item_labels1 <- c(
+  "a" = "1A",
+  "b" = "1B",
+  "c" = "1C",
+  "d" = "1D",
+  "e" = "1E",
+  "f" = "1F",
+  "g" = "1G"
+)
+
+# Add labels to the item column
+domain1_data$item <- gsub("holdning_1", "", domain1_data$item)
+domain1_data$item <- factor(domain1_data$item, levels = names(item_labels1), labels = item_labels1)
+
+# Plot
+plot1 <- ggplot(domain1_data, aes(x = item, y = mean_score)) +
+  geom_bar(stat = "identity", fill = viridis_pal()(1), alpha = 0.8) +
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +  
+  labs(
+    title = "Patient responsibilities",
+    x = "Item",
+    y = "Mean Score"
+  ) +
+  coord_cartesian(ylim = c(1, 5)) 
+
+# Plot 2
+
+# Select the relevant columns and replace 9s with NA
+domain2_data <- study3_data %>%
+  select(matches("^holdning_2[a-h]$")) %>%
+  mutate(across(everything(), ~na_if(., 9))) %>%
+  pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
+  group_by(item) %>%
+  summarise(
+    mean = mean(value, na.rm = TRUE),
+    sd = sd(value, na.rm = TRUE),
+    n = sum(!is.na(value))
+  ) %>%
+  mutate(
+    sem = sd / sqrt(n),
+    lower = mean - qt(0.975, n - 1) * sem,
+    upper = mean + qt(0.975, n - 1) * sem
+  ) %>% 
+  rename(mean_score = mean)
+
+# Add labels for the items
+item_labels2 <- c(
+  "a" = "2A",
+  "b" = "2B",
+  "c" = "2C",
+  "d" = "2D",
+  "e" = "2E",
+  "f" = "2F",
+  "g" = "2G",
+  "h" = "2H"
+)
+
+# Add labels to the item column
+domain2_data$item <- gsub("holdning_2", "", domain2_data$item)
+domain2_data$item <- factor(domain2_data$item, levels = names(item_labels2), labels = item_labels2)
+
+# Plot
+plot2 <- ggplot(domain2_data, aes(x = item, y = mean_score)) +
+  geom_bar(stat = "identity", fill = viridis_pal()(1), alpha = 0.8) + 
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +  
+  labs(
+    title = "Close contacts",
+    x = "Item",
+    y = "Mean Score"
+  ) +
+  coord_cartesian(ylim = c(1, 5)) 
+
+# Plot 3
+
+# Select the relevant columns and replace 9s with NA
+domain3_data <- study3_data %>%
+  select(matches("^holdning_3[a-j]$")) %>%
+  mutate(across(everything(), ~na_if(., 9))) %>%
+  pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
+  group_by(item) %>%
+  summarise(
+    mean = mean(value, na.rm = TRUE),
+    sd = sd(value, na.rm = TRUE),
+    n = sum(!is.na(value))
+  ) %>%
+  mutate(
+    sem = sd / sqrt(n),
+    lower = mean - qt(0.975, n - 1) * sem,
+    upper = mean + qt(0.975, n - 1) * sem
+  ) %>% 
+  rename(mean_score = mean)
+
+# Add labels for the items
+item_labels3 <- c(
+  "a" = "3A",
+  "b" = "3B",
+  "c" = "3C",
+  "d" = "3D",
+  "e" = "3E",
+  "f" = "3F",
+  "g" = "3G",
+  "h" = "3H",
+  "i" = "3I",
+  "j" = "3J"
+)
+
+# Add labels to the item column
+domain3_data$item <- gsub("holdning_3", "", domain3_data$item)
+domain3_data$item <- factor(domain3_data$item, levels = names(item_labels3), labels = item_labels3)
+
+# Plot
+plot3 <- ggplot(domain3_data, aes(x = item, y = mean_score)) +
+  geom_bar(stat = "identity", fill = viridis_pal()(1), alpha = 0.8) + 
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
+  labs(
+    title = "Staff responsibilities",
+    x = "Item",
+    y = "Mean Score"
+  ) +
+  coord_cartesian(ylim = c(1, 5)) 
+
+# Plot 4
+
+# Select the relevant columns and replace 9s with NA
+domain4_data <- study3_data %>%
+  select(matches("^holdning_4[a-e]$")) %>%
+  mutate(across(everything(), ~na_if(., 9))) %>%
+  pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
+  group_by(item) %>%
+  summarise(
+    mean = mean(value, na.rm = TRUE),
+    sd = sd(value, na.rm = TRUE),
+    n = sum(!is.na(value))
+  ) %>%
+  mutate(
+    sem = sd / sqrt(n),
+    lower = mean - qt(0.975, n - 1) * sem,
+    upper = mean + qt(0.975, n - 1) * sem
+  ) %>% 
+  rename(mean_score = mean)
+
+# Add labels for the items
+item_labels4 <- c(
+  "a" = "4A",
+  "b" = "4B",
+  "c" = "4C",
+  "d" = "4D",
+  "e" = "4E"
+)
+
+# Add labels to the item column
+domain4_data$item <- gsub("holdning_4", "", domain4_data$item)
+domain4_data$item <- factor(domain4_data$item, levels = names(item_labels4), labels = item_labels4)
+
+# Plot
+plot4 <- ggplot(domain4_data, aes(x = item, y = mean_score)) +
+  geom_bar(stat = "identity", fill = viridis_pal()(1), alpha = 0.8) + 
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
+  labs(
+    title = "Infection control training",
+    x = "Item",
+    y = "Mean Score"
+  ) +
+  coord_cartesian(ylim = c(1, 5)) 
+
+# Plot 5
+
+# Select the relevant columns and replace 9s with NA
+domain5_data <- study3_data %>%
+  select(matches("^holdning_5[a-d]$")) %>%
+  mutate(across(everything(), ~na_if(., 9))) %>%
+  pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
+  group_by(item) %>%
+  summarise(
+    mean = mean(value, na.rm = TRUE),
+    sd = sd(value, na.rm = TRUE),
+    n = sum(!is.na(value))
+  ) %>%
+  mutate(
+    sem = sd / sqrt(n),
+    lower = mean - qt(0.975, n - 1) * sem,
+    upper = mean + qt(0.975, n - 1) * sem
+  ) %>% 
+  rename(mean_score = mean)
+
+# Add labels for the items
+item_labels5 <- c(
+  "a" = "5A",
+  "b" = "5B",
+  "c" = "5C",
+  "d" = "5D"
+)
+
+# Add labels to the item column
+domain5_data$item <- gsub("holdning_5", "", domain5_data$item)
+domain5_data$item <- factor(domain5_data$item, levels = names(item_labels5), labels = item_labels5)
+
+# Plot
+plot5 <- ggplot(domain5_data, aes(x = item, y = mean_score)) +
+  geom_bar(stat = "identity", fill = viridis_pal()(1), alpha = 0.8) + 
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
+  labs(
+    title = "Prophylactic antibiotics",
+    x = "Item",
+    y = "Mean Score"
+  ) +
+  coord_cartesian(ylim = c(1, 5)) 
+
+# Plot 6
+
+# Select the relevant columns and replace 9s with NA
+domain6_data <- study3_data %>%
+  select(matches("^holdning_6[a-c]$")) %>%
+  mutate(across(everything(), ~na_if(., 9))) %>%
+  pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
+  group_by(item) %>%
+  summarise(
+    mean = mean(value, na.rm = TRUE),
+    sd = sd(value, na.rm = TRUE),
+    n = sum(!is.na(value))
+  ) %>%
+  mutate(
+    sem = sd / sqrt(n),
+    lower = mean - qt(0.975, n - 1) * sem,
+    upper = mean + qt(0.975, n - 1) * sem
+  ) %>% 
+  rename(mean_score = mean)
+
+# Add labels for the items
+item_labels6 <- c(
+  "a" = "6A",
+  "b" = "6B",
+  "c" = "6C"
+)
+
+# Add labels to the item column
+domain6_data$item <- gsub("holdning_6", "", domain6_data$item)
+domain6_data$item <- factor(domain6_data$item, levels = names(item_labels6), labels = item_labels6)
+
+# Plot
+plot6 <- ggplot(domain6_data, aes(x = item, y = mean_score)) +
+  geom_bar(stat = "identity", fill = viridis_pal()(1), alpha = 0.8) + 
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
+  labs(
+    title = "Travel advice",
+    x = "Item",
+    y = "Mean Score"
+  ) +
+  coord_cartesian(ylim = c(1, 5))
+
+# Plot 7
+
+# Select the relevant columns and replace 9s with NA
+domain7_data <- study3_data %>%
+  select(matches("^holdning_7[a-c]$")) %>%
+  mutate(across(everything(), ~na_if(., 9))) %>%
+  pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
+  group_by(item) %>%
+  summarise(
+    mean = mean(value, na.rm = TRUE),
+    sd = sd(value, na.rm = TRUE),
+    n = sum(!is.na(value))
+  ) %>%
+  mutate(
+    sem = sd / sqrt(n),
+    lower = mean - qt(0.975, n - 1) * sem,
+    upper = mean + qt(0.975, n - 1) * sem
+  ) %>% 
+  rename(mean_score = mean)
+
+# Add labels for the items
+item_labels7 <- c(
+  "a" = "7A",
+  "b" = "7B",
+  "c" = "7C"
+)
+
+# Add labels to the item column
+domain7_data$item <- gsub("holdning_7", "", domain7_data$item)
+domain7_data$item <- factor(domain7_data$item, levels = names(item_labels7), labels = item_labels7)
+
+# Plot
+plot7 <- ggplot(domain7_data, aes(x = item, y = mean_score)) +
+  geom_bar(stat = "identity", fill = viridis_pal()(1), alpha = 0.8) + 
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
+  labs(
+    title = "Infection control attention",
+    x = "Item",
+    y = "Mean Score"
+  ) +
+  coord_cartesian(ylim = c(1, 5)) 
+
+# Combine the first three plots for the top row
+top_row <- grid.arrange(plot1, plot2, plot3, ncol = 3)
+
+# Combine the next four plots for the bottom row
+bottom_row <- grid.arrange(plot4, plot5, plot6, plot7, ncol = 4)
+
+# Combine the two rows
+combined_plot <- grid.arrange(top_row, bottom_row, nrow = 2)
+
+# Save the combined plot
+ggsave("combined_plot.pdf", combined_plot, width = 10, height = 10)
+
+
+```
+
+### Table 4
+
+Agreement of the attitude items. 
+
+```{r table 4}
+
+# Function to calculate proportion and 95% CI
+calc_prop_ci <- function(x) {
+  n <- sum(!is.na(x))
+  prop <- mean(x, na.rm = TRUE)
+  ci <- prop.test(sum(x, na.rm = TRUE), n, correct = FALSE)$conf.int
+  tibble(Proportion = prop, `CI Lower` = ci[1], `CI Upper` = ci[2])
+}
+
+# Function to process and reshape data for a given group
+calc_group_data <- function(data, group_name) {
+  data %>%
+    summarise(across(starts_with("holdning_"), calc_prop_ci, .names = "data_{.col}")) %>%
+    pivot_longer(cols = starts_with("data_"), names_to = "Item", values_to = "Values") %>%
+    mutate(Item = str_replace(Item, "data_holdning_", "")) %>%
+    unnest(Values) %>%
+    mutate(Group = group_name)
+}
+
+# Dichotomize the attitude items
+study3_data_dichotomous <- study3_data %>%
+  mutate(across(starts_with("holdning_"), ~ as.numeric(. %in% 4:5)))
+
+# Calculate data for overall, patients, and relatives
+overall_data <- calc_group_data(study3_data_dichotomous, "overall")
+patient_data <- calc_group_data(study3_data_dichotomous %>% filter(krefterfaring == 1), "patient")
+relative_data <- calc_group_data(study3_data_dichotomous %>% filter(krefterfaring == 0), "relative")
+
+# Combine the data
+final_table <- bind_rows(overall_data, patient_data, relative_data)
+
+# Export to Excel
+writexl::write_xlsx(final_table, "table_4.xlsx")
+
+```
+
+
+## Supplementary material
+
+### Table S2
+
+Extra precautions according to infectious complications.
+
+```{r table S1}
+
+# Table S1
+table_S1 <- study3_data %>% 
+  select(infeksjon, forholdsregler_pasient_1, forholdsregler_pasient_2, forholdsregler_pasient_3, 
+         forholdsregler_pasient_4, forholdsregler_pasient_5, forholdsregler_pasient_0, forholdsregler_ansatte_1, 
+         forholdsregler_ansatte_2, forholdsregler_ansatte_3, forholdsregler_ansatte_4, forholdsregler_ansatte_0) %>% 
+    mutate(infeksjon = case_when(
+    infeksjon == 1 ~ "Yes",
+    TRUE ~ "No/unknown"
+  )) %>%
+  tbl_summary(
+    by = infeksjon,
+    label = list(
+      forholdsregler_pasient_1 ~ "Patient: Hand and cough hygiene",
+      forholdsregler_pasient_2 ~ "Patient: Frequent changes of textiles",
+      forholdsregler_pasient_3 ~ "Patient: Limited close contacts",
+      forholdsregler_pasient_4 ~ "Patient: Took vaccines",
+      forholdsregler_pasient_5 ~ "Patient: Did not travel",
+      forholdsregler_pasient_0 ~ "Patient: No precautions",
+      forholdsregler_ansatte_1 ~ "Staff: Donned equipment",
+      forholdsregler_ansatte_2 ~ "Staff: Protective isolation",
+      forholdsregler_ansatte_3 ~ "Staff: Meal hygiene",
+      forholdsregler_ansatte_4 ~ "Staff: Preventive antibiotics",
+      forholdsregler_ansatte_0 ~ "Staff: No precautions"
+  )
+) 
+
+# Convert to data frame
+table_S1_df <- as_tibble(table_S1)
+
+# Write to Excel
+writexl::write_xlsx(table_S1_df, "table_S1.xlsx")
+
+```
+
+
+### Table S3
+
+Regressions over mean correctness.
+
+```{r}
+
+study3_data <- study3_data %>% 
+  mutate(krefttype_2 = case_when(
+    krefttype == 12 ~ "Haematologic cancer",
+    krefttype == 99 | krefttype == 13 ~ NA_character_,
+    TRUE ~ "Solid cancer"
+  )) 
+
+k_regress_age <- lm(mean_correct ~ alder, data = study3_data)
+k_regress_storby <- lm(mean_correct ~ storby, data = study3_data)
+k_regress_foedeland <- lm(mean_correct ~ foedeland, data = study3_data)
+k_regress_krefterfaring <- lm(mean_correct ~ krefterfaring, data = study3_data)
+k_regress_behandling <- lm(mean_correct ~ behandling, data = study3_data)
+k_regress_krefttype_2 <- lm(mean_correct ~ krefttype_2, data = study3_data)
+
+tidy_k_regress_age <- tidy(k_regress_age)
+tidy_k_regress_storby <- tidy(k_regress_storby)
+tidy_k_regress_foedeland <- tidy(k_regress_foedeland)
+tidy_k_regress_krefterfaring <- tidy(k_regress_krefterfaring)
+tidy_k_regress_behandling <- tidy(k_regress_behandling)
+tidy_k_regress_krefttype_2 <- tidy(k_regress_krefttype_2)
+
+tidy_summary <- rbind(tidy_k_regress_age, tidy_k_regress_storby, tidy_k_regress_foedeland, tidy_k_regress_krefterfaring, tidy_k_regress_behandling, tidy_k_regress_krefttype_2)
+
+# Remove rows with term == "(Intercept)"
+tidy_summary <- tidy_summary %>% filter(term != "(Intercept)")
+
+# Format p-values
+tidy_summary$p.value <- formatC(tidy_summary$p.value, format = "f", digits = 4)
+
+print(tidy_summary) # Looks like age might be significant, but the model itself explains very little of the variance
+
+```
+
+
+### Figure S4
+
+Description of attitude scores imputed. 
+
+- Later analyses reveal that three items could be reversed: 2e, 4c, and 7a/7c. Should we present them reversed? 
+
+```{r figure S1, fig.height=20, fig.width=10}
+
+# Replace any "$" at the beginning of the variable names with an empty string
+study3_data_start <- study3_data %>%
+  rename_with(~ str_replace(., "^\\$", ""), everything()) %>% 
+  mutate(across(starts_with("holdning_"), ~replace(., . == 9, NA))) %>% 
+  select(-submission_id, -created, -`referanse-ID`, -answer_time)
+
+# Perform multiple imputations on the full dataframe
+imp_full <- mice(study3_data_start, m = 5)
+
+# Look at the imputed data
+summary(imp_full)
+
+# Complete the imputed data (averaging over the imputations)
+study3_complete <- complete(imp_full)
+ 
+# Create figures
+
+# Plot 1
+
+domain1_data <- study3_complete %>%
+  select(matches("^holdning_1[a-g]$")) %>%
+  mutate(across(everything(), ~na_if(., 9))) %>%
+  pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
+  group_by(item) %>%
+  summarise(
+    mean = mean(value, na.rm = TRUE),
+    sd = sd(value, na.rm = TRUE),
+    n = sum(!is.na(value))
+  ) %>%
+  mutate(
+    sem = sd / sqrt(n),
+    lower = mean - qt(0.975, n - 1) * sem,
+    upper = mean + qt(0.975, n - 1) * sem
+  ) %>% 
+  rename(mean_score = mean)
+
+# Add labels for the items
+item_labels1 <- c(
+  "a" = "1A",
+  "b" = "1B",
+  "c" = "1C",
+  "d" = "1D",
+  "e" = "1E",
+  "f" = "1F",
+  "g" = "1G"
+)
+
+# Add labels to the item column
+domain1_data$item <- gsub("holdning_1", "", domain1_data$item)
+domain1_data$item <- factor(domain1_data$item, levels = names(item_labels1), labels = item_labels1)
+
+# Plot
+plot1 <- ggplot(domain1_data, aes(x = item, y = mean_score)) +
+  geom_bar(stat = "identity", fill = viridis_pal()(1), alpha = 0.8) +
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +  
+  labs(
+    title = "Patient responsibilities",
+    x = "Item",
+    y = "Mean Score"
+  ) +
+  coord_cartesian(ylim = c(1, 5)) 
+
+# Plot 2
+
+# Select the relevant columns and replace 9s with NA
+domain2_data <- study3_complete %>%
+  select(matches("^holdning_2[a-h]$")) %>%
+  mutate(across(everything(), ~na_if(., 9))) %>%
+  pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
+  group_by(item) %>%
+  summarise(
+    mean = mean(value, na.rm = TRUE),
+    sd = sd(value, na.rm = TRUE),
+    n = sum(!is.na(value))
+  ) %>%
+  mutate(
+    sem = sd / sqrt(n),
+    lower = mean - qt(0.975, n - 1) * sem,
+    upper = mean + qt(0.975, n - 1) * sem
+  ) %>% 
+  rename(mean_score = mean)
+
+# Add labels for the items
+item_labels2 <- c(
+  "a" = "2A",
+  "b" = "2B",
+  "c" = "2C",
+  "d" = "2D",
+  "e" = "2E",
+  "f" = "2F",
+  "g" = "2G",
+  "h" = "2H"
+)
+
+# Add labels to the item column
+domain2_data$item <- gsub("holdning_2", "", domain2_data$item)
+domain2_data$item <- factor(domain2_data$item, levels = names(item_labels2), labels = item_labels2)
+
+# Plot
+plot2 <- ggplot(domain2_data, aes(x = item, y = mean_score)) +
+  geom_bar(stat = "identity", fill = viridis_pal()(1), alpha = 0.8) + 
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +  
+  labs(
+    title = "Close contacts",
+    x = "Item",
+    y = "Mean Score"
+  ) +
+  coord_cartesian(ylim = c(1, 5)) 
+
+# Plot 3
+
+# Select the relevant columns and replace 9s with NA
+domain3_data <- study3_complete %>%
+  select(matches("^holdning_3[a-j]$")) %>%
+  mutate(across(everything(), ~na_if(., 9))) %>%
+  pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
+  group_by(item) %>%
+  summarise(
+    mean = mean(value, na.rm = TRUE),
+    sd = sd(value, na.rm = TRUE),
+    n = sum(!is.na(value))
+  ) %>%
+  mutate(
+    sem = sd / sqrt(n),
+    lower = mean - qt(0.975, n - 1) * sem,
+    upper = mean + qt(0.975, n - 1) * sem
+  ) %>% 
+  rename(mean_score = mean)
+
+# Add labels for the items
+item_labels3 <- c(
+  "a" = "3A",
+  "b" = "3B",
+  "c" = "3C",
+  "d" = "3D",
+  "e" = "3E",
+  "f" = "3F",
+  "g" = "3G",
+  "h" = "3H",
+  "i" = "3I",
+  "j" = "3J"
+)
+
+# Add labels to the item column
+domain3_data$item <- gsub("holdning_3", "", domain3_data$item)
+domain3_data$item <- factor(domain3_data$item, levels = names(item_labels3), labels = item_labels3)
+
+# Plot
+plot3 <- ggplot(domain3_data, aes(x = item, y = mean_score)) +
+  geom_bar(stat = "identity", fill = viridis_pal()(1), alpha = 0.8) + 
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
+  labs(
+    title = "Staff responsibilities",
+    x = "Item",
+    y = "Mean Score"
+  ) +
+  coord_cartesian(ylim = c(1, 5)) 
+
+# Plot 4
+
+# Select the relevant columns and replace 9s with NA
+domain4_data <- study3_complete %>%
+  select(matches("^holdning_4[a-e]$")) %>%
+  mutate(across(everything(), ~na_if(., 9))) %>%
+  pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
+  group_by(item) %>%
+  summarise(
+    mean = mean(value, na.rm = TRUE),
+    sd = sd(value, na.rm = TRUE),
+    n = sum(!is.na(value))
+  ) %>%
+  mutate(
+    sem = sd / sqrt(n),
+    lower = mean - qt(0.975, n - 1) * sem,
+    upper = mean + qt(0.975, n - 1) * sem
+  ) %>% 
+  rename(mean_score = mean)
+
+# Add labels for the items
+item_labels4 <- c(
+  "a" = "4A",
+  "b" = "4B",
+  "c" = "4C",
+  "d" = "4D",
+  "e" = "4E"
+)
+
+# Add labels to the item column
+domain4_data$item <- gsub("holdning_4", "", domain4_data$item)
+domain4_data$item <- factor(domain4_data$item, levels = names(item_labels4), labels = item_labels4)
+
+# Plot
+plot4 <- ggplot(domain4_data, aes(x = item, y = mean_score)) +
+  geom_bar(stat = "identity", fill = viridis_pal()(1), alpha = 0.8) + 
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
+  labs(
+    title = "Infection control training",
+    x = "Item",
+    y = "Mean Score"
+  ) +
+  coord_cartesian(ylim = c(1, 5)) 
+
+# Plot 5
+
+# Select the relevant columns and replace 9s with NA
+domain5_data <- study3_complete %>%
+  select(matches("^holdning_5[a-d]$")) %>%
+  mutate(across(everything(), ~na_if(., 9))) %>%
+  pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
+  group_by(item) %>%
+  summarise(
+    mean = mean(value, na.rm = TRUE),
+    sd = sd(value, na.rm = TRUE),
+    n = sum(!is.na(value))
+  ) %>%
+  mutate(
+    sem = sd / sqrt(n),
+    lower = mean - qt(0.975, n - 1) * sem,
+    upper = mean + qt(0.975, n - 1) * sem
+  ) %>% 
+  rename(mean_score = mean)
+
+# Add labels for the items
+item_labels5 <- c(
+  "a" = "5A",
+  "b" = "5B",
+  "c" = "5C",
+  "d" = "5D"
+)
+
+# Add labels to the item column
+domain5_data$item <- gsub("holdning_5", "", domain5_data$item)
+domain5_data$item <- factor(domain5_data$item, levels = names(item_labels5), labels = item_labels5)
+
+# Plot
+plot5 <- ggplot(domain5_data, aes(x = item, y = mean_score)) +
+  geom_bar(stat = "identity", fill = viridis_pal()(1), alpha = 0.8) + 
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
+  labs(
+    title = "Prophylactic antibiotics",
+    x = "Item",
+    y = "Mean Score"
+  ) +
+  coord_cartesian(ylim = c(1, 5)) 
+
+# Plot 6
+
+# Select the relevant columns and replace 9s with NA
+domain6_data <- study3_complete %>%
+  select(matches("^holdning_6[a-c]$")) %>%
+  mutate(across(everything(), ~na_if(., 9))) %>%
+  pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
+  group_by(item) %>%
+  summarise(
+    mean = mean(value, na.rm = TRUE),
+    sd = sd(value, na.rm = TRUE),
+    n = sum(!is.na(value))
+  ) %>%
+  mutate(
+    sem = sd / sqrt(n),
+    lower = mean - qt(0.975, n - 1) * sem,
+    upper = mean + qt(0.975, n - 1) * sem
+  ) %>% 
+  rename(mean_score = mean)
+
+# Add labels for the items
+item_labels6 <- c(
+  "a" = "6A",
+  "b" = "6B",
+  "c" = "6C"
+)
+
+# Add labels to the item column
+domain6_data$item <- gsub("holdning_6", "", domain6_data$item)
+domain6_data$item <- factor(domain6_data$item, levels = names(item_labels6), labels = item_labels6)
+
+# Plot
+plot6 <- ggplot(domain6_data, aes(x = item, y = mean_score)) +
+  geom_bar(stat = "identity", fill = viridis_pal()(1), alpha = 0.8) + 
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
+  labs(
+    title = "Travel advice",
+    x = "Item",
+    y = "Mean Score"
+  ) +
+  coord_cartesian(ylim = c(1, 5))
+
+# Plot 7
+
+# Select the relevant columns and replace 9s with NA
+domain7_data <- study3_complete %>%
+  select(matches("^holdning_7[a-c]$")) %>%
+  mutate(across(everything(), ~na_if(., 9))) %>%
+  pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
+  group_by(item) %>%
+  summarise(
+    mean = mean(value, na.rm = TRUE),
+    sd = sd(value, na.rm = TRUE),
+    n = sum(!is.na(value))
+  ) %>%
+  mutate(
+    sem = sd / sqrt(n),
+    lower = mean - qt(0.975, n - 1) * sem,
+    upper = mean + qt(0.975, n - 1) * sem
+  ) %>% 
+  rename(mean_score = mean)
+
+# Add labels for the items
+item_labels7 <- c(
+  "a" = "7A",
+  "b" = "7B",
+  "c" = "7C"
+)
+
+# Add labels to the item column
+domain7_data$item <- gsub("holdning_7", "", domain7_data$item)
+domain7_data$item <- factor(domain7_data$item, levels = names(item_labels7), labels = item_labels7)
+
+# Plot
+plot7 <- ggplot(domain7_data, aes(x = item, y = mean_score)) +
+  geom_bar(stat = "identity", fill = viridis_pal()(1), alpha = 0.8) + 
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
+  labs(
+    title = "Infection control attention",
+    x = "Item",
+    y = "Mean Score"
+  ) +
+  coord_cartesian(ylim = c(1, 5)) 
+
+# Combine the first three plots for the top row
+top_row <- grid.arrange(plot1, plot2, plot3, ncol = 3)
+
+# Combine the next four plots for the bottom row
+bottom_row <- grid.arrange(plot4, plot5, plot6, plot7, ncol = 4)
+
+# Combine the two rows
+combined_plot_sens <- grid.arrange(top_row, bottom_row, nrow = 2)
+
+# Save the combined plot
+ggsave("combined_plot_sens.pdf", combined_plot_sens, width = 10, height = 10)
+
+
+```
+
+### Figure S5
+
+Description of attitude scores for patients. 
+
+```{r figure S5, fig.height=20, fig.width=10}
+
+# Filter dataset
+
+study3_data_patients <- study3_data %>% 
+  filter(krefterfaring==1) 
+
+# Create figures
+
+# Plot 1
+
+domain1_data <- study3_data_patients %>%
+  select(matches("^holdning_1[a-g]$")) %>%
+  mutate(across(everything(), ~na_if(., 9))) %>%
+  pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
+  group_by(item) %>%
+  summarise(
+    mean = mean(value, na.rm = TRUE),
+    sd = sd(value, na.rm = TRUE),
+    n = sum(!is.na(value))
+  ) %>%
+  mutate(
+    sem = sd / sqrt(n),
+    lower = mean - qt(0.975, n - 1) * sem,
+    upper = mean + qt(0.975, n - 1) * sem
+  ) %>% 
+  rename(mean_score = mean)
+
+# Add labels for the items
+item_labels1 <- c(
+  "a" = "1A",
+  "b" = "1B",
+  "c" = "1C",
+  "d" = "1D",
+  "e" = "1E",
+  "f" = "1F",
+  "g" = "1G"
+)
+
+# Add labels to the item column
+domain1_data$item <- gsub("holdning_1", "", domain1_data$item)
+domain1_data$item <- factor(domain1_data$item, levels = names(item_labels1), labels = item_labels1)
+
+# Plot
+plot1 <- ggplot(domain1_data, aes(x = item, y = mean_score)) +
+  geom_bar(stat = "identity", fill = viridis_pal()(1), alpha = 0.8) +
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +  
+  labs(
+    title = "Patient responsibilities",
+    x = "Item",
+    y = "Mean Score"
+  ) +
+  coord_cartesian(ylim = c(1, 5)) 
+
+# Plot 2
+
+# Select the relevant columns and replace 9s with NA
+domain2_data <- study3_data_patients %>%
+  select(matches("^holdning_2[a-h]$")) %>%
+  mutate(across(everything(), ~na_if(., 9))) %>%
+  pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
+  group_by(item) %>%
+  summarise(
+    mean = mean(value, na.rm = TRUE),
+    sd = sd(value, na.rm = TRUE),
+    n = sum(!is.na(value))
+  ) %>%
+  mutate(
+    sem = sd / sqrt(n),
+    lower = mean - qt(0.975, n - 1) * sem,
+    upper = mean + qt(0.975, n - 1) * sem
+  ) %>% 
+  rename(mean_score = mean)
+
+# Add labels for the items
+item_labels2 <- c(
+  "a" = "2A",
+  "b" = "2B",
+  "c" = "2C",
+  "d" = "2D",
+  "e" = "2E",
+  "f" = "2F",
+  "g" = "2G",
+  "h" = "2H"
+)
+
+# Add labels to the item column
+domain2_data$item <- gsub("holdning_2", "", domain2_data$item)
+domain2_data$item <- factor(domain2_data$item, levels = names(item_labels2), labels = item_labels2)
+
+# Plot
+plot2 <- ggplot(domain2_data, aes(x = item, y = mean_score)) +
+  geom_bar(stat = "identity", fill = viridis_pal()(1), alpha = 0.8) + 
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +  
+  labs(
+    title = "Close contacts",
+    x = "Item",
+    y = "Mean Score"
+  ) +
+  coord_cartesian(ylim = c(1, 5)) 
+
+# Plot 3
+
+# Select the relevant columns and replace 9s with NA
+domain3_data <- study3_data_patients %>%
+  select(matches("^holdning_3[a-j]$")) %>%
+  mutate(across(everything(), ~na_if(., 9))) %>%
+  pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
+  group_by(item) %>%
+  summarise(
+    mean = mean(value, na.rm = TRUE),
+    sd = sd(value, na.rm = TRUE),
+    n = sum(!is.na(value))
+  ) %>%
+  mutate(
+    sem = sd / sqrt(n),
+    lower = mean - qt(0.975, n - 1) * sem,
+    upper = mean + qt(0.975, n - 1) * sem
+  ) %>% 
+  rename(mean_score = mean)
+
+# Add labels for the items
+item_labels3 <- c(
+  "a" = "3A",
+  "b" = "3B",
+  "c" = "3C",
+  "d" = "3D",
+  "e" = "3E",
+  "f" = "3F",
+  "g" = "3G",
+  "h" = "3H",
+  "i" = "3I",
+  "j" = "3J"
+)
+
+# Add labels to the item column
+domain3_data$item <- gsub("holdning_3", "", domain3_data$item)
+domain3_data$item <- factor(domain3_data$item, levels = names(item_labels3), labels = item_labels3)
+
+# Plot
+plot3 <- ggplot(domain3_data, aes(x = item, y = mean_score)) +
+  geom_bar(stat = "identity", fill = viridis_pal()(1), alpha = 0.8) + 
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
+  labs(
+    title = "Staff responsibilities",
+    x = "Item",
+    y = "Mean Score"
+  ) +
+  coord_cartesian(ylim = c(1, 5)) 
+
+# Plot 4
+
+# Select the relevant columns and replace 9s with NA
+domain4_data <- study3_data_patients %>%
+  select(matches("^holdning_4[a-e]$")) %>%
+  mutate(across(everything(), ~na_if(., 9))) %>%
+  pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
+  group_by(item) %>%
+  summarise(
+    mean = mean(value, na.rm = TRUE),
+    sd = sd(value, na.rm = TRUE),
+    n = sum(!is.na(value))
+  ) %>%
+  mutate(
+    sem = sd / sqrt(n),
+    lower = mean - qt(0.975, n - 1) * sem,
+    upper = mean + qt(0.975, n - 1) * sem
+  ) %>% 
+  rename(mean_score = mean)
+
+# Add labels for the items
+item_labels4 <- c(
+  "a" = "4A",
+  "b" = "4B",
+  "c" = "4C",
+  "d" = "4D",
+  "e" = "4E"
+)
+
+# Add labels to the item column
+domain4_data$item <- gsub("holdning_4", "", domain4_data$item)
+domain4_data$item <- factor(domain4_data$item, levels = names(item_labels4), labels = item_labels4)
+
+# Plot
+plot4 <- ggplot(domain4_data, aes(x = item, y = mean_score)) +
+  geom_bar(stat = "identity", fill = viridis_pal()(1), alpha = 0.8) + 
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
+  labs(
+    title = "Infection control training",
+    x = "Item",
+    y = "Mean Score"
+  ) +
+  coord_cartesian(ylim = c(1, 5)) 
+
+# Plot 5
+
+# Select the relevant columns and replace 9s with NA
+domain5_data <- study3_data_patients %>%
+  select(matches("^holdning_5[a-d]$")) %>%
+  mutate(across(everything(), ~na_if(., 9))) %>%
+  pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
+  group_by(item) %>%
+  summarise(
+    mean = mean(value, na.rm = TRUE),
+    sd = sd(value, na.rm = TRUE),
+    n = sum(!is.na(value))
+  ) %>%
+  mutate(
+    sem = sd / sqrt(n),
+    lower = mean - qt(0.975, n - 1) * sem,
+    upper = mean + qt(0.975, n - 1) * sem
+  ) %>% 
+  rename(mean_score = mean)
+
+# Add labels for the items
+item_labels5 <- c(
+  "a" = "5A",
+  "b" = "5B",
+  "c" = "5C",
+  "d" = "5D"
+)
+
+# Add labels to the item column
+domain5_data$item <- gsub("holdning_5", "", domain5_data$item)
+domain5_data$item <- factor(domain5_data$item, levels = names(item_labels5), labels = item_labels5)
+
+# Plot
+plot5 <- ggplot(domain5_data, aes(x = item, y = mean_score)) +
+  geom_bar(stat = "identity", fill = viridis_pal()(1), alpha = 0.8) + 
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
+  labs(
+    title = "Prophylactic antibiotics",
+    x = "Item",
+    y = "Mean Score"
+  ) +
+  coord_cartesian(ylim = c(1, 5)) 
+
+# Plot 6
+
+# Select the relevant columns and replace 9s with NA
+domain6_data <- study3_data_patients %>%
+  select(matches("^holdning_6[a-c]$")) %>%
+  mutate(across(everything(), ~na_if(., 9))) %>%
+  pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
+  group_by(item) %>%
+  summarise(
+    mean = mean(value, na.rm = TRUE),
+    sd = sd(value, na.rm = TRUE),
+    n = sum(!is.na(value))
+  ) %>%
+  mutate(
+    sem = sd / sqrt(n),
+    lower = mean - qt(0.975, n - 1) * sem,
+    upper = mean + qt(0.975, n - 1) * sem
+  ) %>% 
+  rename(mean_score = mean)
+
+# Add labels for the items
+item_labels6 <- c(
+  "a" = "6A",
+  "b" = "6B",
+  "c" = "6C"
+)
+
+# Add labels to the item column
+domain6_data$item <- gsub("holdning_6", "", domain6_data$item)
+domain6_data$item <- factor(domain6_data$item, levels = names(item_labels6), labels = item_labels6)
+
+# Plot
+plot6 <- ggplot(domain6_data, aes(x = item, y = mean_score)) +
+  geom_bar(stat = "identity", fill = viridis_pal()(1), alpha = 0.8) + 
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
+  labs(
+    title = "Travel advice",
+    x = "Item",
+    y = "Mean Score"
+  ) +
+  coord_cartesian(ylim = c(1, 5))
+
+# Plot 7
+
+# Select the relevant columns and replace 9s with NA
+domain7_data <- study3_data_patients %>%
+  select(matches("^holdning_7[a-c]$")) %>%
+  mutate(across(everything(), ~na_if(., 9))) %>%
+  pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
+  group_by(item) %>%
+  summarise(
+    mean = mean(value, na.rm = TRUE),
+    sd = sd(value, na.rm = TRUE),
+    n = sum(!is.na(value))
+  ) %>%
+  mutate(
+    sem = sd / sqrt(n),
+    lower = mean - qt(0.975, n - 1) * sem,
+    upper = mean + qt(0.975, n - 1) * sem
+  ) %>% 
+  rename(mean_score = mean)
+
+# Add labels for the items
+item_labels7 <- c(
+  "a" = "7A",
+  "b" = "7B",
+  "c" = "7C"
+)
+
+# Add labels to the item column
+domain7_data$item <- gsub("holdning_7", "", domain7_data$item)
+domain7_data$item <- factor(domain7_data$item, levels = names(item_labels7), labels = item_labels7)
+
+# Plot
+plot7 <- ggplot(domain7_data, aes(x = item, y = mean_score)) +
+  geom_bar(stat = "identity", fill = viridis_pal()(1), alpha = 0.8) + 
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
+  labs(
+    title = "Infection control attention",
+    x = "Item",
+    y = "Mean Score"
+  ) +
+  coord_cartesian(ylim = c(1, 5)) 
+
+# Combine the first three plots for the top row
+top_row <- grid.arrange(plot1, plot2, plot3, ncol = 3)
+
+# Combine the next four plots for the bottom row
+bottom_row <- grid.arrange(plot4, plot5, plot6, plot7, ncol = 4)
+
+# Combine the two rows
+combined_plot_patients <- grid.arrange(top_row, bottom_row, nrow = 2)
+
+# Save the combined plot
+ggsave("combined_plot_patients.pdf", combined_plot_patients, width = 10, height = 10)
+
+
+```
+
+### Figure S6
+
+Description of attitude scores for next-of-kin. 
+
+```{r figure S5, fig.height=20, fig.width=10}
+
+# Filter dataset
+
+study3_data_relatives <- study3_data %>% 
+  filter(krefterfaring==0) 
+
+# Create figures
+
+# Plot 1
+
+domain1_data <- study3_data_relatives %>%
+  select(matches("^holdning_1[a-g]$")) %>%
+  mutate(across(everything(), ~na_if(., 9))) %>%
+  pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
+  group_by(item) %>%
+  summarise(
+    mean = mean(value, na.rm = TRUE),
+    sd = sd(value, na.rm = TRUE),
+    n = sum(!is.na(value))
+  ) %>%
+  mutate(
+    sem = sd / sqrt(n),
+    lower = mean - qt(0.975, n - 1) * sem,
+    upper = mean + qt(0.975, n - 1) * sem
+  ) %>% 
+  rename(mean_score = mean)
+
+# Add labels for the items
+item_labels1 <- c(
+  "a" = "1A",
+  "b" = "1B",
+  "c" = "1C",
+  "d" = "1D",
+  "e" = "1E",
+  "f" = "1F",
+  "g" = "1G"
+)
+
+# Add labels to the item column
+domain1_data$item <- gsub("holdning_1", "", domain1_data$item)
+domain1_data$item <- factor(domain1_data$item, levels = names(item_labels1), labels = item_labels1)
+
+# Plot
+plot1 <- ggplot(domain1_data, aes(x = item, y = mean_score)) +
+  geom_bar(stat = "identity", fill = viridis_pal()(1), alpha = 0.8) +
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +  
+  labs(
+    title = "Patient responsibilities",
+    x = "Item",
+    y = "Mean Score"
+  ) +
+  coord_cartesian(ylim = c(1, 5)) 
+
+# Plot 2
+
+# Select the relevant columns and replace 9s with NA
+domain2_data <- study3_data_relatives %>%
+  select(matches("^holdning_2[a-h]$")) %>%
+  mutate(across(everything(), ~na_if(., 9))) %>%
+  pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
+  group_by(item) %>%
+  summarise(
+    mean = mean(value, na.rm = TRUE),
+    sd = sd(value, na.rm = TRUE),
+    n = sum(!is.na(value))
+  ) %>%
+  mutate(
+    sem = sd / sqrt(n),
+    lower = mean - qt(0.975, n - 1) * sem,
+    upper = mean + qt(0.975, n - 1) * sem
+  ) %>% 
+  rename(mean_score = mean)
+
+# Add labels for the items
+item_labels2 <- c(
+  "a" = "2A",
+  "b" = "2B",
+  "c" = "2C",
+  "d" = "2D",
+  "e" = "2E",
+  "f" = "2F",
+  "g" = "2G",
+  "h" = "2H"
+)
+
+# Add labels to the item column
+domain2_data$item <- gsub("holdning_2", "", domain2_data$item)
+domain2_data$item <- factor(domain2_data$item, levels = names(item_labels2), labels = item_labels2)
+
+# Plot
+plot2 <- ggplot(domain2_data, aes(x = item, y = mean_score)) +
+  geom_bar(stat = "identity", fill = viridis_pal()(1), alpha = 0.8) + 
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +  
+  labs(
+    title = "Close contacts",
+    x = "Item",
+    y = "Mean Score"
+  ) +
+  coord_cartesian(ylim = c(1, 5)) 
+
+# Plot 3
+
+# Select the relevant columns and replace 9s with NA
+domain3_data <- study3_data_relatives %>%
+  select(matches("^holdning_3[a-j]$")) %>%
+  mutate(across(everything(), ~na_if(., 9))) %>%
+  pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
+  group_by(item) %>%
+  summarise(
+    mean = mean(value, na.rm = TRUE),
+    sd = sd(value, na.rm = TRUE),
+    n = sum(!is.na(value))
+  ) %>%
+  mutate(
+    sem = sd / sqrt(n),
+    lower = mean - qt(0.975, n - 1) * sem,
+    upper = mean + qt(0.975, n - 1) * sem
+  ) %>% 
+  rename(mean_score = mean)
+
+# Add labels for the items
+item_labels3 <- c(
+  "a" = "3A",
+  "b" = "3B",
+  "c" = "3C",
+  "d" = "3D",
+  "e" = "3E",
+  "f" = "3F",
+  "g" = "3G",
+  "h" = "3H",
+  "i" = "3I",
+  "j" = "3J"
+)
+
+# Add labels to the item column
+domain3_data$item <- gsub("holdning_3", "", domain3_data$item)
+domain3_data$item <- factor(domain3_data$item, levels = names(item_labels3), labels = item_labels3)
+
+# Plot
+plot3 <- ggplot(domain3_data, aes(x = item, y = mean_score)) +
+  geom_bar(stat = "identity", fill = viridis_pal()(1), alpha = 0.8) + 
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
+  labs(
+    title = "Staff responsibilities",
+    x = "Item",
+    y = "Mean Score"
+  ) +
+  coord_cartesian(ylim = c(1, 5)) 
+
+# Plot 4
+
+# Select the relevant columns and replace 9s with NA
+domain4_data <- study3_data_relatives %>%
+  select(matches("^holdning_4[a-e]$")) %>%
+  mutate(across(everything(), ~na_if(., 9))) %>%
+  pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
+  group_by(item) %>%
+  summarise(
+    mean = mean(value, na.rm = TRUE),
+    sd = sd(value, na.rm = TRUE),
+    n = sum(!is.na(value))
+  ) %>%
+  mutate(
+    sem = sd / sqrt(n),
+    lower = mean - qt(0.975, n - 1) * sem,
+    upper = mean + qt(0.975, n - 1) * sem
+  ) %>% 
+  rename(mean_score = mean)
+
+# Add labels for the items
+item_labels4 <- c(
+  "a" = "4A",
+  "b" = "4B",
+  "c" = "4C",
+  "d" = "4D",
+  "e" = "4E"
+)
+
+# Add labels to the item column
+domain4_data$item <- gsub("holdning_4", "", domain4_data$item)
+domain4_data$item <- factor(domain4_data$item, levels = names(item_labels4), labels = item_labels4)
+
+# Plot
+plot4 <- ggplot(domain4_data, aes(x = item, y = mean_score)) +
+  geom_bar(stat = "identity", fill = viridis_pal()(1), alpha = 0.8) + 
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
+  labs(
+    title = "Infection control training",
+    x = "Item",
+    y = "Mean Score"
+  ) +
+  coord_cartesian(ylim = c(1, 5)) 
+
+# Plot 5
+
+# Select the relevant columns and replace 9s with NA
+domain5_data <- study3_data_relatives %>%
+  select(matches("^holdning_5[a-d]$")) %>%
+  mutate(across(everything(), ~na_if(., 9))) %>%
+  pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
+  group_by(item) %>%
+  summarise(
+    mean = mean(value, na.rm = TRUE),
+    sd = sd(value, na.rm = TRUE),
+    n = sum(!is.na(value))
+  ) %>%
+  mutate(
+    sem = sd / sqrt(n),
+    lower = mean - qt(0.975, n - 1) * sem,
+    upper = mean + qt(0.975, n - 1) * sem
+  ) %>% 
+  rename(mean_score = mean)
+
+# Add labels for the items
+item_labels5 <- c(
+  "a" = "5A",
+  "b" = "5B",
+  "c" = "5C",
+  "d" = "5D"
+)
+
+# Add labels to the item column
+domain5_data$item <- gsub("holdning_5", "", domain5_data$item)
+domain5_data$item <- factor(domain5_data$item, levels = names(item_labels5), labels = item_labels5)
+
+# Plot
+plot5 <- ggplot(domain5_data, aes(x = item, y = mean_score)) +
+  geom_bar(stat = "identity", fill = viridis_pal()(1), alpha = 0.8) + 
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
+  labs(
+    title = "Prophylactic antibiotics",
+    x = "Item",
+    y = "Mean Score"
+  ) +
+  coord_cartesian(ylim = c(1, 5)) 
+
+# Plot 6
+
+# Select the relevant columns and replace 9s with NA
+domain6_data <- study3_data_relatives %>%
+  select(matches("^holdning_6[a-c]$")) %>%
+  mutate(across(everything(), ~na_if(., 9))) %>%
+  pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
+  group_by(item) %>%
+  summarise(
+    mean = mean(value, na.rm = TRUE),
+    sd = sd(value, na.rm = TRUE),
+    n = sum(!is.na(value))
+  ) %>%
+  mutate(
+    sem = sd / sqrt(n),
+    lower = mean - qt(0.975, n - 1) * sem,
+    upper = mean + qt(0.975, n - 1) * sem
+  ) %>% 
+  rename(mean_score = mean)
+
+# Add labels for the items
+item_labels6 <- c(
+  "a" = "6A",
+  "b" = "6B",
+  "c" = "6C"
+)
+
+# Add labels to the item column
+domain6_data$item <- gsub("holdning_6", "", domain6_data$item)
+domain6_data$item <- factor(domain6_data$item, levels = names(item_labels6), labels = item_labels6)
+
+# Plot
+plot6 <- ggplot(domain6_data, aes(x = item, y = mean_score)) +
+  geom_bar(stat = "identity", fill = viridis_pal()(1), alpha = 0.8) + 
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
+  labs(
+    title = "Travel advice",
+    x = "Item",
+    y = "Mean Score"
+  ) +
+  coord_cartesian(ylim = c(1, 5))
+
+# Plot 7
+
+# Select the relevant columns and replace 9s with NA
+domain7_data <- study3_data_relatives %>%
+  select(matches("^holdning_7[a-c]$")) %>%
+  mutate(across(everything(), ~na_if(., 9))) %>%
+  pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
+  group_by(item) %>%
+  summarise(
+    mean = mean(value, na.rm = TRUE),
+    sd = sd(value, na.rm = TRUE),
+    n = sum(!is.na(value))
+  ) %>%
+  mutate(
+    sem = sd / sqrt(n),
+    lower = mean - qt(0.975, n - 1) * sem,
+    upper = mean + qt(0.975, n - 1) * sem
+  ) %>% 
+  rename(mean_score = mean)
+
+# Add labels for the items
+item_labels7 <- c(
+  "a" = "7A",
+  "b" = "7B",
+  "c" = "7C"
+)
+
+# Add labels to the item column
+domain7_data$item <- gsub("holdning_7", "", domain7_data$item)
+domain7_data$item <- factor(domain7_data$item, levels = names(item_labels7), labels = item_labels7)
+
+# Plot
+plot7 <- ggplot(domain7_data, aes(x = item, y = mean_score)) +
+  geom_bar(stat = "identity", fill = viridis_pal()(1), alpha = 0.8) + 
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
+  labs(
+    title = "Infection control attention",
+    x = "Item",
+    y = "Mean Score"
+  ) +
+  coord_cartesian(ylim = c(1, 5)) 
+
+# Combine the first three plots for the top row
+top_row <- grid.arrange(plot1, plot2, plot3, ncol = 3)
+
+# Combine the next four plots for the bottom row
+bottom_row <- grid.arrange(plot4, plot5, plot6, plot7, ncol = 4)
+
+# Combine the two rows
+combined_plot_relatives <- grid.arrange(top_row, bottom_row, nrow = 2)
+
+# Save the combined plot
+ggsave("combined_plot_relatives.pdf", combined_plot_relatives, width = 10, height = 10)
+
+
+```
+
+### Table S6
+
+Cronbach's alpha for each attitude domain.
+
+```{r table 3}
+# Replace 9 with NA in columns starting with "holdning_"
+study3_data <- study3_data %>%
+  mutate(across(starts_with("holdning_"), ~replace(., . == 9, NA)))
+
+# Function to calculate Cronbach's alpha for a given set of items
+calculate_alpha <- function(domain) {
+  # Selecting columns based on domain
+  items <- grep(paste0("^holdning_", domain), names(study3_data), value = TRUE)
+  alpha(study3_data[, items])$total$raw_alpha
+}
+
+# Calculate Cronbach's alpha for each domain
+results <- tibble(
+  Domain = 1:7,
+  Cronbachs_Alpha = map_dbl(1:7, ~calculate_alpha(.))
+)
+
+# Display results
+results
+```
+
+This revealed 3 items that were negatively correlated with the rest of the domain: 2e, 4c, 7b. 2e and 4c is inconsistent and should be excluded. Domain 7 can probably not be counted as a domain. 
+
+```{r table 5_b}
+
+# New table with changes and mean scores
+
+# Reversing item 7b
+#study3_data$holdning_7b <- 6 - study3_data$holdning_7b
+
+# Creating a list to hold the domains
+domains <- list(
+  domain1 = c("holdning_1a", "holdning_1b", "holdning_1c", "holdning_1d", "holdning_1e", "holdning_1f"),
+  domain2 = c("holdning_2a", "holdning_2b", "holdning_2c", "holdning_2d"), # 2e excluded
+  domain3 = c("holdning_3a", "holdning_3b", "holdning_3c", "holdning_3d", "holdning_3e", "holdning_3f"),
+  domain4 = c("holdning_4a", "holdning_4b", "holdning_4d"), # 4c excluded
+  domain5 = c("holdning_5a", "holdning_5b", "holdning_5c", "holdning_5d"),
+  domain6 = c("holdning_6a", "holdning_6b", "holdning_6c")#,
+  #domain7 = c("holdning_7a", "holdning_7b", "holdning_7c") # 7a and 7c reversed
+)
+
+# Function to calculate mean score and Cronbach's alpha
+results <- map_dfr(domains, ~{
+  selected_items <- study3_data[,.]
+  mean_score <- rowMeans(selected_items, na.rm = TRUE)
+  alpha <- alpha(selected_items)$total
+  tibble(
+    domain_name = names(.),
+    mean_score = mean(mean_score, na.rm = TRUE),
+    cronbach_alpha = alpha[["raw_alpha"]]
+  )
+})
+
+# Extracting domain number from domain name
+results <- results %>%
+  mutate(domain = c("Domain 1", "Domain 2", "Domain 3", "Domain 4", "Domain 5", "Domain 6")) %>%
+  select(domain, everything())
+
+results
+
+```
+
+### Table S7
+
+Modelling attitudes. 
+
+Choose the three most consistent domains from the Cronbach's alpha analysis (domain 1, 2, and 3), with 2e excluded, in addition to domain 6 and make one aggregated mean attitude score. Try to explain it in an OLS regression with our background variables.
+
+```{r modelling attitudes}
+
+study3_data <- study3_data %>% 
+  mutate(krefttype_2 = case_when(
+    krefttype == 12 ~ "Haematologic cancer",
+    krefttype == 99 | krefttype == 13 ~ NA_character_,
+    TRUE ~ "Solid cancer"
+  )) 
+
+# Select relevant columns and set 9s to NA
+study3_data_filtered <- study3_data %>%
+  select(holdning_1a, holdning_1b, holdning_1c, holdning_1d, holdning_1e, holdning_1f, holdning_1g, holdning_2a, holdning_2b, holdning_2c, holdning_2d, holdning_2f, holdning_2g, holdning_2h, holdning_3a, holdning_3b, holdning_3c, holdning_3d, holdning_3e, holdning_3f, holdning_3g, holdning_3h, holdning_3i, holdning_3j, holdning_6a, holdning_6b, holdning_6c, alder, infeksjon, kjoenn, storby, foedeland, krefterfaring, behandling, krefttype_2, mean_correct, krefttype) %>%
+  mutate(across(everything(), ~na_if(., 9)))
+
+# Calculate aggregate mean attitude score
+relevant_cols <- names(study3_data_filtered)[1:27]
+
+study3_data_filtered <- study3_data_filtered %>%
+  mutate(agg_mean_attitude = rowMeans(select(., all_of(relevant_cols)), na.rm = TRUE))
+
+# Univariable OLS regressions
+model_alder <- lm(agg_mean_attitude ~ alder, data = study3_data_filtered)
+model_kjoenn <- lm(agg_mean_attitude ~ kjoenn, data = study3_data_filtered)
+model_storby <- lm(agg_mean_attitude ~ storby, data = study3_data_filtered)
+model_infeksjon <- lm(agg_mean_attitude ~ infeksjon, data = study3_data_filtered)
+model_foedeland <- lm(agg_mean_attitude ~ foedeland, data = study3_data_filtered)
+model_krefterfaring <- lm(agg_mean_attitude ~ krefterfaring, data = study3_data_filtered)
+model_behandling <- lm(agg_mean_attitude ~ behandling, data = study3_data_filtered)
+model_krefttype_2 <- lm(agg_mean_attitude ~ krefttype_2, data = study3_data_filtered)
+model_krefttype <- lm(agg_mean_attitude ~ factor(krefttype), data = study3_data_filtered)
+model_mean_correct <- lm(agg_mean_attitude ~ mean_correct, data = study3_data_filtered)
+
+# Inspect models
+summary(model_alder)
+summary(model_kjoenn)
+summary(model_storby)
+summary(model_infeksjon)
+summary(model_foedeland)
+summary(model_krefterfaring) 
+summary(model_behandling)
+summary(model_krefttype_2) 
+summary(model_krefttype) 
+
+summary(model_mean_correct)
+
+model_krefterfaring_full <- lm(agg_mean_attitude ~ alder + kjoenn + storby + infeksjon + foedeland + behandling + krefttype_2 + krefterfaring, data = study3_data_filtered) # full model, there is kind of nothing here 
+
+summary(model_krefterfaring_full)
+tidy_full <- tidy(model_krefterfaring_full)
+
+# Format p-values
+tidy_full$p.value <- formatC(tidy_full$p.value, format = "f", digits = 4)
+
+print(tidy_full) 
+
+```
+
+```{r violin plots, fig.height=5, fig.width=5}
+
+# Create figures
+
+# Plot 1
+
+domain1_data <- study3_data %>%
+  select(matches("^holdning_1[a-g]$")) %>%
+  mutate(across(everything(), ~na_if(., 9))) %>%
+  pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
+  group_by(item) %>%
+  summarise(
+    mean = mean(value, na.rm = TRUE),
+    sd = sd(value, na.rm = TRUE),
+    n = sum(!is.na(value))
+  ) %>%
+  mutate(
+    sem = sd / sqrt(n),
+    lower = mean - qt(0.975, n - 1) * sem,
+    upper = mean + qt(0.975, n - 1) * sem
+  ) %>% 
+  rename(mean_score = mean)
+
+# Add labels for the items
+item_labels1 <- c(
+  "a" = "1A",
+  "b" = "1B",
+  "c" = "1C",
+  "d" = "1D",
+  "e" = "1E",
+  "f" = "1F",
+  "g" = "1G"
+)
+
+# Add labels to the item column
+domain1_data$item <- gsub("holdning_1", "", domain1_data$item)
+domain1_data$item <- factor(domain1_data$item, levels = names(item_labels1), labels = item_labels1)
+
+# Prepare the original, long-format data for the violin plot
+long_format_data <- study3_data %>%
+  select(matches("^holdning_1[a-g]$")) %>%
+  mutate(across(everything(), ~na_if(., 9))) %>%
+  pivot_longer(cols = everything(), names_to = "item", values_to = "value")
+
+# Add labels to the items in the long-format data
+long_format_data$item <- gsub("holdning_1", "", long_format_data$item)
+long_format_data$item <- factor(long_format_data$item, levels = names(item_labels1), labels = item_labels1)
+
+plot1 <- ggplot(long_format_data, aes(x = item, y = value)) +
+  geom_quasirandom(groupOnX = TRUE, alpha = 0.5) + # Beeswarm plot
+  #geom_point(data = domain1_data, aes(x = item, y = mean_score), color = "red", size = 3) + # Mean points
+  #geom_errorbar(data = domain1_data, aes(x = item, ymin = lower, ymax = upper), width = 0.2, color = "blue") + # CI error bars
+  labs(
+    title = "Patient responsibilities",
+    x = "Item",
+    y = "Score"
+  ) +
+  scale_y_continuous(breaks = 1:5) + # Assuming the scores are integers from 1 to 5
+  coord_cartesian(ylim = c(1, 5))
+
+plot1
+
+```
+
